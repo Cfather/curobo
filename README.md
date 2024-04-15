@@ -8,11 +8,36 @@ disclosure or distribution of this material and related documentation
 without an express license agreement from NVIDIA CORPORATION or
 its affiliates is strictly prohibited.
 -->
-# cuRobo
+# cuRobo (For SPARROWS comparison)
 
 *CUDA Accelerated Robot Library*
 
 **Check [curobo.org](https://curobo.org) for installing and getting started with examples!**
+
+Run the following command to create a conda environment before running any examples:
+```
+conda env create -f environment.yml
+```
+
+Then run the following command to activate this environment:
+```
+conda activate curobo-comparison-env
+```
+
+Check your python version by running the following command. curobo only works on python<=3.10
+```
+python3 --version
+```
+
+Install curobo by running the following command:
+```
+pip install -e . --no-build-isolation
+```
+
+Test if the installation is successful by running the following command for testing:
+```
+python3 -m pytest .
+```
 
 Use [Discussions](https://github.com/NVlabs/curobo/discussions) for questions on using this package.
 
