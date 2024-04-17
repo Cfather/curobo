@@ -15,7 +15,7 @@
 import torch
 import scipy.io as sio
 import numpy as np
-# import pickle
+import pickle
 
 # CuRobo
 from curobo.geom.sdf.world import CollisionCheckerType
@@ -27,9 +27,9 @@ from curobo.util.logger import setup_curobo_logger
 from curobo.util_file import get_robot_configs_path, get_world_configs_path, join_path, load_yaml
 from curobo.wrap.reacher.motion_gen import MotionGen, MotionGenConfig, MotionGenPlanConfig
 
-# obs_num = 40
-# datadir = '../no_filter_planning_results/planning_results_pi_6/3d7links'+str(obs_num)+'obs/'
-# filename = 'armtd_1branched_t0.5_stats_3d7links100trials'+str(obs_num)+'obs150steps_0.5limit.pkl'
+obs_num = 40
+datadir = '../no_filter_planning_results/planning_results_pi_6/3d7links'+str(obs_num)+'obs/'
+filename = 'armtd_1branched_t0.5_stats_3d7links100trials'+str(obs_num)+'obs150steps_0.5limit.pkl'
 
 def demo_motion_gen(test_id):
     # Standard Library
@@ -53,15 +53,15 @@ def demo_motion_gen(test_id):
     motion_gen = MotionGen(motion_gen_config)
     motion_gen.warmup(parallel_finetune=True)
 
-    # with open(datadir + filename, 'rb') as f:
-    #     data = pickle.load(f)
+    with open(datadir + filename, 'rb') as f:
+        data = pickle.load(f)
 
     start_state_tensor = torch.tensor([0, 0.5, 0, -0.5, 0, 0, 0], device='cuda:0')
     goal_state_tensor = torch.tensor([0,-0.5,0, 0.5,0,0, 0], device='cuda:0')
 
-    # for i in range(7):
-    #     start_state_tensor[i] = data[test_id]['initial']['qpos'][i]
-    #     goal_state_tensor[i] = data[test_id]['initial']['qgoal'][i]
+    for i in range(7):
+        start_state_tensor[i] = data[test_id]['initial']['qpos'][i]
+        goal_state_tensor[i] = data[test_id]['initial']['qgoal'][i]
     
     start_state = JointState.from_position(start_state_tensor.view(1, -1))
     goal_state = JointState.from_position(goal_state_tensor.view(1, -1))
@@ -72,6 +72,8 @@ def demo_motion_gen(test_id):
         MotionGenPlanConfig(max_attempts=1000, \
                             enable_graph=True, \
                             parallel_finetune=True, \
+                            timeout=20, \
+                            finetune_attempts=100, \
                             enable_finetune_trajopt=True),
     )
 
@@ -86,8 +88,8 @@ def demo_motion_gen(test_id):
     print(solve_time)
 
     # save q as a mat file
-    result_filename = 'curobo_trajectory.mat'
-    # result_filename = 'comparison-results/curobo_trajectory_'+str(obs_num)+'_'+str(test_id)+'.mat'
+    # result_filename = 'curobo_trajectory.mat'
+    result_filename = 'comparison-results/curobo_trajectory_'+str(obs_num)+'_'+str(test_id)+'.mat'
     sio.savemat(result_filename, \
                 {'if_success': if_success, \
                  'q': q, \
@@ -98,12 +100,12 @@ def demo_motion_gen(test_id):
 
 if __name__ == "__main__":
     setup_curobo_logger("error")
-    # for i in range(100):
-    #     print(i)
-    #     try:
-    #         demo_motion_gen(test_id=i)
-    #     except Exception as e:
-    #         print("Failed to plan for test_id", i)
-    #         print(e)
-    #         continue
-    demo_motion_gen(test_id=0)
+    for i in range(100):
+        print(i)
+        try:
+            demo_motion_gen(test_id=i)
+        except Exception as e:
+            print("Failed to plan for test_id", i)
+            print(e)
+            continue
+    # demo_motion_gen(test_id=0)
