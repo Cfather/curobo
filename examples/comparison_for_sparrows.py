@@ -15,6 +15,7 @@
 import torch
 import scipy.io as sio
 import numpy as np
+import pickle
 
 # CuRobo
 from curobo.geom.sdf.world import CollisionCheckerType
@@ -26,6 +27,9 @@ from curobo.util.logger import setup_curobo_logger
 from curobo.util_file import get_robot_configs_path, get_world_configs_path, join_path, load_yaml
 from curobo.wrap.reacher.motion_gen import MotionGen, MotionGenConfig, MotionGenPlanConfig
 
+obs_num = 5
+datadir = '../no_filter_planning_results/planning_results_pi_6/3d7links'+str(obs_num)+'obs/'
+filename = 'armtd_1branched_t0.5_stats_3d7links100trials'+str(obs_num)+'obs150steps_0.5limit.pkl'
 
 def plot_traj(trajectory, dt):
     # Third Party
@@ -92,10 +96,12 @@ def plot_iters_traj_3d(trajectory, d_id=1, dof=7, seed=0):
     # plt.legend()
     plt.show()
 
-def demo_motion_gen():
+def demo_motion_gen(test_id):
     # Standard Library
     tensor_args = TensorDeviceType()
     world_file = "simple_scenario.yml"
+    # world_file = "sparrows_comparison/world_" + str(test_id) + ".yml"
+
     robot_file = "kinova_gen3.yml"
     motion_gen_config = MotionGenConfig.load_from_robot_config(
         robot_file,
@@ -112,21 +118,25 @@ def demo_motion_gen():
     motion_gen = MotionGen(motion_gen_config)
     motion_gen.warmup(parallel_finetune=True)
 
-    # motion_gen.warmup(enable_graph=True, warmup_js_trajopt=js, parallel_finetune=True)
-    # robot_cfg = load_yaml(join_path(get_robot_configs_path(), robot_file))["robot_cfg"]
-    # robot_cfg = RobotConfig.from_dict(robot_cfg, tensor_args)
+    with open(datadir + filename, 'rb') as f:
+        data = pickle.load(f)
 
-    start_state_tensor = torch.tensor([0.0, 0.5, -0.5, 0.0, 0.0, 0.0, 1.345], device='cuda:0')
-    goal_state_tensor = torch.tensor([0.0, 1.0, 0.5, 0.0, 0.0, 0.0, -1.345], device='cuda:0')
+    start_state_tensor = torch.tensor([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], device='cuda:0')
+    goal_state_tensor = torch.tensor([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], device='cuda:0')
 
+    for i in range(7):
+        start_state_tensor[i] = data[test_id]['initial']['qpos'][i]
+        goal_state_tensor[i] = data[test_id]['initial']['qgoal'][i]
+    
     start_state = JointState.from_position(start_state_tensor.view(1, -1))
     goal_state = JointState.from_position(goal_state_tensor.view(1, -1))
 
     result = motion_gen.plan_single_js(
         start_state,
         goal_state,
-        MotionGenPlanConfig(max_attempts=1, parallel_finetune=True, enable_finetune_trajopt=True),
+        MotionGenPlanConfig(max_attempts=100, enable_graph=True, parallel_finetune=True, enable_finetune_trajopt=True),
     )
+
     # print(
     #     "Trajectory Generated: ",
     #     result.success,
@@ -136,16 +146,15 @@ def demo_motion_gen():
     # )
 
     if_success = result.success.cpu().numpy()
-    traj = result.get_interpolated_plan()
-    q = traj.position.cpu().numpy()
+    q = result.optimized_plan.position.cpu().numpy()
     dt = result.optimized_dt.cpu().numpy()
     solve_time = result.solve_time
 
     print(if_success)
 
     # save q as a mat file
-    sio.savemat('curobo_trajectory.mat', {'if_success': if_success, 'q': q, 'dt': dt, 'solve_time': solve_time})
+    sio.savemat('curobo_trajectory_'+str(test_id)+'.mat', {'if_success': if_success, 'q': q, 'dt': dt, 'solve_time': solve_time})
 
 if __name__ == "__main__":
     setup_curobo_logger("error")
-    demo_motion_gen()
+    demo_motion_gen(test_id=0)
