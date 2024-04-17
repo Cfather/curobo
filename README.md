@@ -48,6 +48,8 @@ python3 -m pytest .
 ```
 
 ## Run comparisons
+You need to copy `no_filter_planning_results/` folder under `curobo/` first.
+
 Go to `examples/` folder and run
 ```
 python3 comparison_for_sparrows.py 
