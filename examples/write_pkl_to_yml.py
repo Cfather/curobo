@@ -19,7 +19,7 @@ for i in range(len(data)):
     for j in range(len(data[i]['initial']['obstacle_pos'])):
         file.write('  obstacle' + str(j) + ':\n')
         file.write('    dims: ' + str(data[i]['initial']['obstacle_size'][j].tolist()) + '\n')
-        file.write('    pose: ' + str(np.append(data[i]['initial']['obstacle_pos'][j], np.array([0,0,0,1])).tolist()) + '\n')
+        file.write('    pose: ' + str(np.append(data[i]['initial']['obstacle_pos'][j], np.array([1,0,0,0])).tolist()) + '\n')
     
     file.close()
 
