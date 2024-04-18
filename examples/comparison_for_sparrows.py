@@ -34,8 +34,8 @@ filename = 'armtd_1branched_t0.5_stats_3d7links100trials'+str(obs_num)+'obs150st
 def demo_motion_gen(test_id):
     # Standard Library
     tensor_args = TensorDeviceType()
-    world_file = "simple_scenario.yml"
-    # world_file = 'sparrows_comparison/'+str(obs_num)+'obs/world_' + str(test_id) + '.yml'
+    # world_file = "simple_scenario.yml"
+    world_file = 'sparrows_comparison/'+str(obs_num)+'obs/world_' + str(test_id) + '.yml'
 
     robot_file = "kinova_gen3.yml"
     motion_gen_config = MotionGenConfig.load_from_robot_config(
@@ -43,6 +43,7 @@ def demo_motion_gen(test_id):
         world_file,
         tensor_args,
         interpolation_dt=0.01,
+        trajopt_tsteps=100,
         # trajopt_dt=0.15,
         # velocity_scale=0.1,
         use_cuda_graph=True,
@@ -69,12 +70,14 @@ def demo_motion_gen(test_id):
     result = motion_gen.plan_single_js(
         start_state,
         goal_state,
-        MotionGenPlanConfig(max_attempts=1000, \
+        MotionGenPlanConfig(max_attempts=10, \
                             enable_graph=True, \
                             parallel_finetune=True, \
-                            timeout=20, \
-                            finetune_attempts=100, \
-                            enable_finetune_trajopt=True),
+                            timeout=2, \
+                            finetune_attempts=10, \
+                            enable_finetune_trajopt=True, \
+                            num_graph_seeds=4, \
+                            num_trajopt_seeds=12),
     )
 
     if_success = result.success.cpu().numpy()
